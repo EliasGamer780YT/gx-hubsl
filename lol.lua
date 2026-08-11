@@ -1,6 +1,6 @@
 --[[
     Gamers X - Cliente (PAGA)
-    Sin !gx online en el chat
+    Marker silencioso | Owner cmds | Desync | Stamina | Dribbles
 ]]
 
 local Players = game:GetService("Players")
@@ -16,11 +16,11 @@ local player = Players.LocalPlayer
 -- ======================
 -- CONFIG
 -- ======================
-local OWNER_ID = 11362947592 -- <-- TU ID
+local OWNER_ID = 11362947592 -- owner
 
 local ALLOWED = {
-	[11242163323] = true, --dodegue9
-	[1903088035] = true, ---dodegue
+	[11242163323] = true, -- dodegue9
+	[1903088035] = true,  -- dodegue
 }
 
 if not ALLOWED[player.UserId] then
@@ -28,10 +28,10 @@ if not ALLOWED[player.UserId] then
 	return
 end
 
-print("✅ Gamers X Paga |", player.Name)
+print("✅ Gamers X Paga |", player.Name, player.UserId)
 
 -- ======================
--- NOTIF (solo para cmds del owner)
+-- NOTIF
 -- ======================
 local notifGui = Instance.new("ScreenGui")
 notifGui.Name = "GamersXClientNotif"
@@ -84,12 +84,28 @@ local function markPaid()
 		player:SetAttribute("GamersXPaid", true)
 		player:SetAttribute("GamersXTag", "GX_PAID")
 	end)
+
+	local char = player.Character
+	if char and not char:FindFirstChild("GamersXPaidMarker") then
+		local folder = Instance.new("Folder")
+		folder.Name = "GamersXPaidMarker"
+		folder.Parent = char
+	end
 end
 
 markPaid()
+
 player.CharacterAdded:Connect(function()
-	task.wait(0.5)
+	task.wait(0.45)
 	markPaid()
+end)
+
+-- por si el character tarda
+task.spawn(function()
+	while true do
+		task.wait(3)
+		markPaid()
+	end
 end)
 
 -- ======================
@@ -101,7 +117,9 @@ local function doKill()
 	local hum = char and char:FindFirstChildOfClass("Humanoid")
 	if hum then hum.Health = 0 end
 	task.delay(0.8, function()
-		pcall(function() player:LoadCharacter() end)
+		pcall(function()
+			player:LoadCharacter()
+		end)
 	end)
 end
 
@@ -192,7 +210,7 @@ pcall(function()
 end)
 
 -- ======================
--- HUB
+-- HUB UI
 -- ======================
 local desyncSystem = false
 local desyncOn = false
@@ -651,4 +669,4 @@ task.spawn(function()
 	enableInfiniteStamina()
 end)
 
-print("✅ Cliente OK ")
+print("✅ Cliente listo ")
