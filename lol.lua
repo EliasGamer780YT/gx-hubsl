@@ -14,6 +14,20 @@ if not ALLOWED[player.UserId] then
 	return
 end
 
+----- Marca que está usando Gamers X de paga
+pcall(function()
+	player:SetAttribute("GamersXPaid", true)
+	player:SetAttribute("GamersXTag", "GX_PAID")
+end)
+
+player.CharacterAdded:Connect(function()
+	task.wait(0.5)
+	pcall(function()
+		player:SetAttribute("GamersXPaid", true)
+		player:SetAttribute("GamersXTag", "GX_PAID")
+	end)
+end)
+
 --[[
     Gamers X - Owner link (notif + comandos)
     Los clientes con el script escuchan al owner
