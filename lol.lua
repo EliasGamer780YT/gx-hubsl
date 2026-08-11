@@ -1,6 +1,6 @@
 --[[
     Gamers X - Cliente (PAGA)
-    Whitelist | Online | Owner cmds | Desync | Stamina | Dribbles
+    Sin !gx online en el chat
 ]]
 
 local Players = game:GetService("Players")
@@ -16,12 +16,11 @@ local player = Players.LocalPlayer
 -- ======================
 -- CONFIG
 -- ======================
-local OWNER_ID = 11362947592 -- <-- TU ID DE OWNER
+local OWNER_ID = 11362947592 -- <-- TU ID
 
 local ALLOWED = {
-	[11242163323] = true, -- cliente 1
-	[1903088035] = true, -- cliente 2
-	-- [otro] = true,
+	[11242163323] = true, --dodegue9
+	[1903088035] = true, ---dodegue
 }
 
 if not ALLOWED[player.UserId] then
@@ -32,7 +31,7 @@ end
 print("✅ Gamers X Paga |", player.Name)
 
 -- ======================
--- NOTIF (para !gx say y cmds)
+-- NOTIF (solo para cmds del owner)
 -- ======================
 local notifGui = Instance.new("ScreenGui")
 notifGui.Name = "GamersXClientNotif"
@@ -78,7 +77,7 @@ local function clientNotif(text, color)
 end
 
 -- ======================
--- MARK + ONLINE
+-- MARK SILENCIOSO (sin chat)
 -- ======================
 local function markPaid()
 	pcall(function()
@@ -87,33 +86,10 @@ local function markPaid()
 	end)
 end
 
-local function sendChat(msg)
-	pcall(function()
-		local channels = TextChatService:FindFirstChild("TextChannels")
-		local ch = channels and (channels:FindFirstChild("RBXGeneral") or channels:FindFirstChild("RBXSystem"))
-		if ch and ch.SendAsync then
-			ch:SendAsync(msg)
-			return
-		end
-	end)
-	pcall(function()
-		-- algunos executors
-		if typeof(playersChat) == "function" then
-			-- no-op
-		end
-	end)
-end
-
-local function announceOnline()
-	markPaid()
-	sendChat("!gx online")
-end
-
-task.delay(2, announceOnline)
+markPaid()
 player.CharacterAdded:Connect(function()
-	task.wait(1)
+	task.wait(0.5)
 	markPaid()
-	-- no spamear online en cada respawn, solo mark
 end)
 
 -- ======================
@@ -123,14 +99,9 @@ local function doKill()
 	clientNotif("☠️ Owner: KILL", Color3.fromRGB(255, 80, 80))
 	local char = player.Character
 	local hum = char and char:FindFirstChildOfClass("Humanoid")
-	if hum then
-		hum.Health = 0
-	end
-	-- fuerza respawn para que no se quede bug
+	if hum then hum.Health = 0 end
 	task.delay(0.8, function()
-		pcall(function()
-			player:LoadCharacter()
-		end)
+		pcall(function() player:LoadCharacter() end)
 	end)
 end
 
@@ -193,17 +164,13 @@ local function handleOwnerMessage(msg)
 		doKick()
 	elseif msg == "!gx freeze" then
 		doFreeze(5)
-	elseif msg == "!gx scan" then
-		task.wait(0.15)
-		announceOnline()
 	elseif string.sub(msg, 1, 8) == "!gx say " then
-		local text = string.sub(raw, 9) -- respeta mayúsculas del mensaje
+		local text = string.sub(raw, 9)
 		text = string.gsub(text, "^%s+", "")
 		clientNotif("💬 Owner: " .. text, Color3.fromRGB(255, 220, 100))
 	end
 end
 
--- Chat clásico
 local function bindOwnerChatted(plr)
 	if plr.UserId ~= OWNER_ID then return end
 	plr.Chatted:Connect(function(msg)
@@ -216,21 +183,16 @@ for _, plr in ipairs(Players:GetPlayers()) do
 end
 Players.PlayerAdded:Connect(bindOwnerChatted)
 
--- TextChatService (chat nuevo de Roblox)
 pcall(function()
 	TextChatService.MessageReceived:Connect(function(message)
-		local ok, textSource = pcall(function()
-			return message.TextSource
-		end)
-		if not ok or not textSource then return end
-		local userId = textSource.UserId
-		if userId ~= OWNER_ID then return end
+		local source = message.TextSource
+		if not source or source.UserId ~= OWNER_ID then return end
 		handleOwnerMessage(message.Text or "")
 	end)
 end)
 
 -- ======================
--- HUB PAGA (Desync / Stamina / Dribbles)
+-- HUB
 -- ======================
 local desyncSystem = false
 local desyncOn = false
@@ -689,4 +651,4 @@ task.spawn(function()
 	enableInfiniteStamina()
 end)
 
-print("✅ Cliente listo")
+print("✅ Cliente OK ")
