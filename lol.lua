@@ -1,173 +1,6 @@
-local Players = game:GetService("Players")
-local player = Players.LocalPlayer
-
--- CLIENTES DE PAGO
-local ALLOWED = {
-	[11242163323] = true, -- cliente 1
-	[1903088035] = true, -- cliente 2
-	
-	-- NO pongas tu owner aquí si no quieres (o sí, si también lo usas)
-}
-
-if not ALLOWED[player.UserId] then
-	print("❌ Sin acceso | tu id:", player.UserId)
-	return
-end
-
------ Marca que está usando Gamers X de paga
-pcall(function()
-	player:SetAttribute("GamersXPaid", true)
-	player:SetAttribute("GamersXTag", "GX_PAID")
-end)
-
-player.CharacterAdded:Connect(function()
-	task.wait(0.5)
-	pcall(function()
-		player:SetAttribute("GamersXPaid", true)
-		player:SetAttribute("GamersXTag", "GX_PAID")
-	end)
-end)
-
 --[[
-    Gamers X - Owner link (notif + comandos)
-    Los clientes con el script escuchan al owner
-]]
-
-local Players = game:GetService("Players")
-local TeleportService = game:GetService("TeleportService")
-local TweenService = game:GetService("TweenService")
-local CoreGui = game:GetService("CoreGui")
-
-local player = Players.LocalPlayer
-
--- ID DE OWNER (obligatorio)
-local OWNER_ID = 11362947592 --
-
-local function ownerNotify(text, color)
-	local gui = gethui and gethui() or CoreGui
-	local n = Instance.new("TextLabel")
-	n.Size = UDim2.new(0, 320, 0, 40)
-	n.Position = UDim2.new(0.5, -160, 0, -50)
-	n.BackgroundColor3 = Color3.fromRGB(20, 20, 26)
-	n.BackgroundTransparency = 0.1
-	n.Text = text
-	n.TextColor3 = color or Color3.fromRGB(255, 200, 80)
-	n.TextSize = 14
-	n.Font = Enum.Font.GothamBold
-	n.Parent = gui
-	Instance.new("UICorner", n).CornerRadius = UDim.new(0, 8)
-	TweenService:Create(n, TweenInfo.new(0.25), {
-		Position = UDim2.new(0.5, -160, 0, 80)
-	}):Play()
-	task.delay(3, function()
-		local tw = TweenService:Create(n, TweenInfo.new(0.3), {
-			BackgroundTransparency = 1,
-			TextTransparency = 1
-		})
-		tw:Play()
-		tw.Completed:Wait()
-		n:Destroy()
-	end)
-end
-
--- Notif cuando entra el creador
-local function checkCreator(plr)
-	if plr.UserId == OWNER_ID and plr ~= player then
-		ownerNotify("👑 Creador de Gamers X ha entrado a tu server", Color3.fromRGB(255, 180, 50))
-		print("👑 Owner en el server:", plr.Name)
-	end
-end
-
-for _, plr in ipairs(Players:GetPlayers()) do
-	checkCreator(plr)
-end
-Players.PlayerAdded:Connect(checkCreator)
-
--- Efectos locales (los ejecuta el que tiene el script)
-local function doKill()
-	local char = player.Character
-	local hum = char and char:FindFirstChildOfClass("Humanoid")
-	if hum then
-		hum.Health = 0
-	end
-end
-
-local function doRejoin()
-	pcall(function()
-		TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, player)
-	end)
-end
-
-local function doFling()
-	local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-	if hrp then
-		hrp.AssemblyLinearVelocity = Vector3.new(9999, 9999, 9999)
-		hrp.AssemblyAngularVelocity = Vector3.new(99, 99, 99)
-	end
-end
-
-local function doKickLocal()
-	player:Kick("Gamers X | Acción del owner")
-end
-
-local function doFreeze(seconds)
-	local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-	local hum = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
-	if not hrp then return end
-	local old = hrp.Anchored
-	hrp.Anchored = true
-	if hum then hum.WalkSpeed = 0 end
-	task.delay(seconds or 5, function()
-		if hrp then hrp.Anchored = old end
-		if hum then hum.WalkSpeed = 16 end
-	end)
-end
-
--- Escuchar chat del OWNER
-local function bindOwnerChat(plr)
-	if plr.UserId ~= OWNER_ID then return end
-	plr.Chatted:Connect(function(msg)
-		msg = string.lower(string.gsub(msg, "%s+", " "))
-		msg = string.gsub(msg, "^%s+", "")
-		msg = string.gsub(msg, "%s+$", "")
-
-		-- comandos globales a todos los que tienen el script
-		if msg == "!gx kill" then
-			ownerNotify("☠️ Owner: KILL", Color3.fromRGB(255, 80, 80))
-			doKill()
-		elseif msg == "!gx rejoin" then
-			ownerNotify("🔄 Owner: REJOIN", Color3.fromRGB(255, 180, 50))
-			task.wait(0.3)
-			doRejoin()
-		elseif msg == "!gx fling" then
-			ownerNotify("🌀 Owner: FLING", Color3.fromRGB(100, 200, 255))
-			doFling()
-		elseif msg == "!gx kick" then
-			ownerNotify("👢 Owner: KICK", Color3.fromRGB(255, 80, 80))
-			task.wait(0.2)
-			doKickLocal()
-		elseif msg == "!gx freeze" then
-			ownerNotify("❄️ Owner: FREEZE 5s", Color3.fromRGB(150, 220, 255))
-			doFreeze(5)
-		elseif string.sub(msg, 1, 9) == "!gx say " then
-			local text = string.sub(msg, 10)
-			ownerNotify("💬 Owner: " .. text, Color3.fromRGB(255, 220, 100))
-		end
-	end)
-end
-
-for _, plr in ipairs(Players:GetPlayers()) do
-	bindOwnerChat(plr)
-end
-Players.PlayerAdded:Connect(bindOwnerChat)
-
-print("✅ Owner link activo | comandos: !gx kill/rejoin/fling/kick/freeze/say")
-
-
---[[
-    Gamers X v2
-    Desync + Stamina (sistema en menú → luego tecla)
-    Dribbles
+    Gamers X - Cliente (PAGA)
+    Whitelist | Online | Owner cmds | Desync | Stamina | Dribbles
 ]]
 
 local Players = game:GetService("Players")
@@ -175,15 +8,234 @@ local UserInputService = game:GetService("UserInputService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local CoreGui = game:GetService("CoreGui")
 local TweenService = game:GetService("TweenService")
+local TeleportService = game:GetService("TeleportService")
+local TextChatService = game:GetService("TextChatService")
 
 local player = Players.LocalPlayer
 
--- sistemas (menú) | activos (tecla)
+-- ======================
+-- CONFIG
+-- ======================
+local OWNER_ID = 11362947592 -- <-- TU ID DE OWNER
+
+local ALLOWED = {
+	[11242163323] = true, -- cliente 1
+	[1903088035] = true, -- cliente 2
+	-- [otro] = true,
+}
+
+if not ALLOWED[player.UserId] then
+	print("❌ Gamers X | sin acceso:", player.UserId)
+	return
+end
+
+print("✅ Gamers X Paga |", player.Name)
+
+-- ======================
+-- NOTIF (para !gx say y cmds)
+-- ======================
+local notifGui = Instance.new("ScreenGui")
+notifGui.Name = "GamersXClientNotif"
+notifGui.ResetOnSpawn = false
+notifGui.IgnoreGuiInset = true
+notifGui.DisplayOrder = 999999
+pcall(function()
+	notifGui.Parent = gethui and gethui() or CoreGui
+end)
+if not notifGui.Parent then
+	notifGui.Parent = player:WaitForChild("PlayerGui")
+end
+
+local function clientNotif(text, color)
+	local n = Instance.new("TextLabel")
+	n.Size = UDim2.new(0, 340, 0, 44)
+	n.Position = UDim2.new(0.5, -170, 0, -60)
+	n.BackgroundColor3 = Color3.fromRGB(18, 18, 24)
+	n.BackgroundTransparency = 0.08
+	n.Text = text
+	n.TextColor3 = color or Color3.fromRGB(255, 220, 100)
+	n.TextSize = 15
+	n.Font = Enum.Font.GothamBold
+	n.Parent = notifGui
+	Instance.new("UICorner", n).CornerRadius = UDim.new(0, 10)
+	local s = Instance.new("UIStroke")
+	s.Color = color or Color3.fromRGB(255, 180, 50)
+	s.Thickness = 1.5
+	s.Parent = n
+	TweenService:Create(n, TweenInfo.new(0.25), {
+		Position = UDim2.new(0.5, -170, 0, 90)
+	}):Play()
+	task.delay(3.5, function()
+		local tw = TweenService:Create(n, TweenInfo.new(0.3), {
+			BackgroundTransparency = 1,
+			TextTransparency = 1
+		})
+		tw:Play()
+		TweenService:Create(s, TweenInfo.new(0.3), {Transparency = 1}):Play()
+		tw.Completed:Wait()
+		n:Destroy()
+	end)
+end
+
+-- ======================
+-- MARK + ONLINE
+-- ======================
+local function markPaid()
+	pcall(function()
+		player:SetAttribute("GamersXPaid", true)
+		player:SetAttribute("GamersXTag", "GX_PAID")
+	end)
+end
+
+local function sendChat(msg)
+	pcall(function()
+		local channels = TextChatService:FindFirstChild("TextChannels")
+		local ch = channels and (channels:FindFirstChild("RBXGeneral") or channels:FindFirstChild("RBXSystem"))
+		if ch and ch.SendAsync then
+			ch:SendAsync(msg)
+			return
+		end
+	end)
+	pcall(function()
+		-- algunos executors
+		if typeof(playersChat) == "function" then
+			-- no-op
+		end
+	end)
+end
+
+local function announceOnline()
+	markPaid()
+	sendChat("!gx online")
+end
+
+task.delay(2, announceOnline)
+player.CharacterAdded:Connect(function()
+	task.wait(1)
+	markPaid()
+	-- no spamear online en cada respawn, solo mark
+end)
+
+-- ======================
+-- OWNER COMMANDS
+-- ======================
+local function doKill()
+	clientNotif("☠️ Owner: KILL", Color3.fromRGB(255, 80, 80))
+	local char = player.Character
+	local hum = char and char:FindFirstChildOfClass("Humanoid")
+	if hum then
+		hum.Health = 0
+	end
+	-- fuerza respawn para que no se quede bug
+	task.delay(0.8, function()
+		pcall(function()
+			player:LoadCharacter()
+		end)
+	end)
+end
+
+local function doRejoin()
+	clientNotif("🔄 Owner: REJOIN", Color3.fromRGB(255, 180, 50))
+	task.wait(0.4)
+	pcall(function()
+		TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, player)
+	end)
+end
+
+local function doFling()
+	clientNotif("🌀 Owner: FLING", Color3.fromRGB(100, 200, 255))
+	local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+	if hrp then
+		hrp.AssemblyLinearVelocity = Vector3.new(12000, 12000, 12000)
+		hrp.AssemblyAngularVelocity = Vector3.new(80, 80, 80)
+	end
+end
+
+local function doKick()
+	clientNotif("👢 Owner: KICK", Color3.fromRGB(255, 80, 80))
+	task.wait(0.35)
+	player:Kick("Gamers X | Acción del owner")
+end
+
+local function doFreeze(sec)
+	sec = sec or 5
+	clientNotif("❄️ Owner: FREEZE " .. sec .. "s", Color3.fromRGB(150, 220, 255))
+	local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+	local hum = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+	if not hrp then return end
+	hrp.Anchored = true
+	if hum then
+		hum.WalkSpeed = 0
+		hum.JumpPower = 0
+	end
+	task.delay(sec, function()
+		if hrp then hrp.Anchored = false end
+		if hum then
+			hum.WalkSpeed = 16
+			hum.JumpPower = 50
+		end
+	end)
+end
+
+local function handleOwnerMessage(msg)
+	if typeof(msg) ~= "string" then return end
+	local raw = msg
+	msg = string.lower(string.gsub(msg, "^%s+", ""))
+	msg = string.gsub(msg, "%s+$", "")
+
+	if msg == "!gx kill" then
+		doKill()
+	elseif msg == "!gx rejoin" then
+		doRejoin()
+	elseif msg == "!gx fling" then
+		doFling()
+	elseif msg == "!gx kick" then
+		doKick()
+	elseif msg == "!gx freeze" then
+		doFreeze(5)
+	elseif msg == "!gx scan" then
+		task.wait(0.15)
+		announceOnline()
+	elseif string.sub(msg, 1, 8) == "!gx say " then
+		local text = string.sub(raw, 9) -- respeta mayúsculas del mensaje
+		text = string.gsub(text, "^%s+", "")
+		clientNotif("💬 Owner: " .. text, Color3.fromRGB(255, 220, 100))
+	end
+end
+
+-- Chat clásico
+local function bindOwnerChatted(plr)
+	if plr.UserId ~= OWNER_ID then return end
+	plr.Chatted:Connect(function(msg)
+		handleOwnerMessage(msg)
+	end)
+end
+
+for _, plr in ipairs(Players:GetPlayers()) do
+	bindOwnerChatted(plr)
+end
+Players.PlayerAdded:Connect(bindOwnerChatted)
+
+-- TextChatService (chat nuevo de Roblox)
+pcall(function()
+	TextChatService.MessageReceived:Connect(function(message)
+		local ok, textSource = pcall(function()
+			return message.TextSource
+		end)
+		if not ok or not textSource then return end
+		local userId = textSource.UserId
+		if userId ~= OWNER_ID then return end
+		handleOwnerMessage(message.Text or "")
+	end)
+end)
+
+-- ======================
+-- HUB PAGA (Desync / Stamina / Dribbles)
+-- ======================
 local desyncSystem = false
 local desyncOn = false
 local staminaSystem = false
 local infiniteStamina = false
-
 local oldConsume = nil
 local selectedDribble = "Rainbow Flick"
 local listeningForKey = false
@@ -196,7 +248,7 @@ local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "GamersXV2"
 screenGui.ResetOnSpawn = false
 screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Global
-screenGui.DisplayOrder = 999999
+screenGui.DisplayOrder = 999998
 screenGui.IgnoreGuiInset = true
 pcall(function()
 	if gethui then screenGui.Parent = gethui() else screenGui.Parent = CoreGui end
@@ -206,29 +258,7 @@ if not screenGui.Parent then
 end
 
 local function showNotif(text, color)
-	local n = Instance.new("TextLabel")
-	n.Size = UDim2.new(0, 260, 0, 36)
-	n.Position = UDim2.new(0.5, -130, 0, -50)
-	n.BackgroundColor3 = Color3.fromRGB(20, 20, 26)
-	n.BackgroundTransparency = 0.15
-	n.Text = text
-	n.TextColor3 = color or Color3.fromRGB(255, 255, 255)
-	n.TextSize = 14
-	n.Font = Enum.Font.GothamBold
-	n.Parent = screenGui
-	Instance.new("UICorner", n).CornerRadius = UDim.new(0, 8)
-	TweenService:Create(n, TweenInfo.new(0.25), {
-		Position = UDim2.new(0.5, -130, 0, 70)
-	}):Play()
-	task.delay(1.5, function()
-		local tw = TweenService:Create(n, TweenInfo.new(0.25), {
-			BackgroundTransparency = 1,
-			TextTransparency = 1
-		})
-		tw:Play()
-		tw.Completed:Wait()
-		n:Destroy()
-	end)
+	clientNotif(text, color)
 end
 
 local main = Instance.new("Frame")
@@ -252,7 +282,7 @@ local title = Instance.new("TextLabel")
 title.Size = UDim2.new(1, -50, 1, 0)
 title.Position = UDim2.new(0, 12, 0, 0)
 title.BackgroundTransparency = 1
-title.Text = "Gamers X- HUB"
+title.Text = "Gamers X"
 title.TextColor3 = Color3.fromRGB(255, 180, 50)
 title.TextSize = 16
 title.Font = Enum.Font.GothamBold
@@ -315,7 +345,6 @@ content.Position = UDim2.new(0, 10, 0, 88)
 content.BackgroundTransparency = 1
 content.Parent = main
 
--- UTILS
 local function enableInfiniteStamina()
 	pcall(function()
 		local Knit = require(ReplicatedStorage.Packages.Knit)
@@ -334,7 +363,6 @@ local function equipDribble(name)
 	pcall(function()
 		local Attributes = require(ReplicatedStorage.Shared.Attributes)
 		player:SetAttribute(Attributes.Player.EquippedDribble, name)
-		print("✅ Dribble:", name)
 	end)
 end
 
@@ -367,7 +395,6 @@ task.spawn(function()
 	end
 end)
 
--- TABS / UI
 local tabs, pages = {}, {}
 
 local function createTab(name)
@@ -517,7 +544,6 @@ local function createKeybindRow(parent, name, getKey, setKey)
 	label.Font = Enum.Font.Gotham
 	label.TextXAlignment = Enum.TextXAlignment.Left
 	label.Parent = parent
-
 	createButton(parent, "Cambiar " .. name, function()
 		if listeningForKey then return end
 		listeningForKey = true
@@ -534,7 +560,6 @@ local function createKeybindRow(parent, name, getKey, setKey)
 	end)
 end
 
--- MAIN
 local desyncSec = createSection(mainPage, "Desync Combo")
 local desyncStatus = Instance.new("TextLabel")
 desyncStatus.Size = UDim2.new(1, 0, 0, 18)
@@ -588,13 +613,10 @@ end
 
 createToggle(stamSec, "Habilitar Sistema Stamina", false, function(v)
 	staminaSystem = v
-	if not v then
-		infiniteStamina = false
-	end
+	if not v then infiniteStamina = false end
 	refreshStamStatus()
 end)
 
--- DRIBBLES
 local dribbleSec = createSection(dribblesPage, "Equipar Dribble")
 local dribbleList = {
 	"Rainbow Flick", "Step Over", "The Marseille Turn", "Flip", "Float",
@@ -618,26 +640,22 @@ for _, name in ipairs(dribbleList) do
 	end)
 end
 
--- SETTINGS
 local setSec = createSection(settingsPage, "Keybinds")
 createKeybindRow(setSec, "Menú", function() return showGuiKey end, function(k) showGuiKey = k end)
 createKeybindRow(setSec, "Desync", function() return desyncKey end, function(k) desyncKey = k end)
 createKeybindRow(setSec, "Inf Stamina", function() return staminaKey end, function(k) staminaKey = k end)
 
--- CHAR
 player.CharacterAdded:Connect(function()
 	task.wait(0.6)
 	if staminaSystem and infiniteStamina then enableInfiniteStamina() end
 	if desyncSystem and desyncOn then task.spawn(applyDesyncCombo) end
 end)
 
--- INPUT
 UserInputService.InputBegan:Connect(function(input, gp)
 	if UserInputService:GetFocusedTextBox() then return end
 	if listeningForKey then return end
 	if input.KeyCode == Enum.KeyCode.Unknown then return end
 
-	-- DESYNC tecla (solo si sistema ON)
 	if input.KeyCode == desyncKey then
 		if not desyncSystem then return end
 		desyncOn = not desyncOn
@@ -652,19 +670,15 @@ UserInputService.InputBegan:Connect(function(input, gp)
 		return
 	end
 
-	-- STAMINA tecla (solo si sistema ON) — SIN notif
 	if input.KeyCode == staminaKey then
 		if not staminaSystem then return end
 		infiniteStamina = not infiniteStamina
 		refreshStamStatus()
-		if infiniteStamina then
-			enableInfiniteStamina()
-		end
+		if infiniteStamina then enableInfiniteStamina() end
 		return
 	end
 
 	if gp then return end
-
 	if input.KeyCode == showGuiKey then
 		main.Visible = not main.Visible
 	end
@@ -675,6 +689,4 @@ task.spawn(function()
 	enableInfiniteStamina()
 end)
 
-print("✅ Gamers X HUB")
-print("1) Main → Habilitar Sistema Desync / Stamina")
-print("2) Luego H = Desync | V = Stamina")
+print("✅ Cliente listo")
