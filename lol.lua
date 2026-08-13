@@ -1,10 +1,12 @@
 --[[
     Gamers X - Cliente (PAGA)
-    Marker | Owner cmds | Desync | Stamina | Dribbles | FFlags BETA
+    Debounce | Desync | Stamina | Dribbles | FFlags BETA
 ]]
 
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local CollectionService = game:GetService("CollectionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local CoreGui = game:GetService("CoreGui")
 local TweenService = game:GetService("TweenService")
@@ -18,6 +20,7 @@ local OWNER_ID = 11362947592
 local ALLOWED = {
 	[11242163323] = true, -- dodegue9
 	[1903088035] = true,  -- dodegue
+	[984159292] = true,  -- Juanvelriv 
 }
 
 if not ALLOWED[player.UserId] then
@@ -26,6 +29,28 @@ if not ALLOWED[player.UserId] then
 end
 
 print("✅ Gamers X Paga |", player.Name, player.UserId)
+
+local desyncSystem = false
+local desyncOn = false
+local staminaSystem = false
+local infiniteStamina = false
+local oldConsume = nil
+local selectedDribble = "Rainbow Flick"
+local listeningForKey = false
+
+local debounceSystem = false
+local debounceActive = false
+local debounceMultiplier = 1.3
+local debounceCooldown = 0.35
+local lastDebounceBoost = 0
+local lastDebounceVel = Vector3.zero
+local debounceAutoOffTime = 2.5
+local debounceToken = 0
+
+local showGuiKey = Enum.KeyCode.LeftControl
+local staminaKey = Enum.KeyCode.V
+local desyncKey = Enum.KeyCode.H
+local debounceKey = Enum.KeyCode.G
 
 local notifGui = Instance.new("ScreenGui")
 notifGui.Name = "GamersXClientNotif"
@@ -191,17 +216,17 @@ pcall(function()
 	end)
 end)
 
-local desyncSystem = false
-local desyncOn = false
-local staminaSystem = false
-local infiniteStamina = false
-local oldConsume = nil
-local selectedDribble = "Rainbow Flick"
-local listeningForKey = false
-
-local showGuiKey = Enum.KeyCode.LeftControl
-local staminaKey = Enum.KeyCode.V
-local desyncKey = Enum.KeyCode.H
+local function getFootball()
+	for _, obj in ipairs(CollectionService:GetTagged("Football") or {}) do
+		if obj:IsA("BasePart") then return obj end
+	end
+	for _, obj in ipairs(workspace:GetDescendants()) do
+		if obj:IsA("BasePart") and (obj.Name:lower():find("ball") or obj.Name:lower():find("football")) then
+			return obj
+		end
+	end
+	return nil
+end
 
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "GamersXV2"
@@ -221,8 +246,8 @@ local function showNotif(text, color)
 end
 
 local main = Instance.new("Frame")
-main.Size = UDim2.new(0, 320, 0, 460)
-main.Position = UDim2.new(0.5, -160, 0.5, -230)
+main.Size = UDim2.new(0, 320, 0, 480)
+main.Position = UDim2.new(0.5, -160, 0.5, -240)
 main.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
 main.BorderSizePixel = 0
 main.Active = true
@@ -288,14 +313,14 @@ do
 end
 
 local tabBar = Instance.new("Frame")
-tabBar.Size = UDim2.new(1, -16, 0, 32)
-tabBar.Position = UDim2.new(0, 8, 0, 48)
+tabBar.Size = UDim2.new(1, -12, 0, 32)
+tabBar.Position = UDim2.new(0, 6, 0, 48)
 tabBar.BackgroundTransparency = 1
 tabBar.Parent = main
 
 local tabLayout = Instance.new("UIListLayout")
 tabLayout.FillDirection = Enum.FillDirection.Horizontal
-tabLayout.Padding = UDim.new(0, 5)
+tabLayout.Padding = UDim.new(0, 4)
 tabLayout.Parent = tabBar
 
 local content = Instance.new("Frame")
@@ -358,11 +383,11 @@ local tabs, pages = {}, {}
 
 local function createTab(name)
 	local btn = Instance.new("TextButton")
-	btn.Size = UDim2.new(0, 70, 1, 0)
+	btn.Size = UDim2.new(0, 58, 1, 0)
 	btn.BackgroundColor3 = Color3.fromRGB(30, 30, 38)
 	btn.Text = name
 	btn.TextColor3 = Color3.fromRGB(160, 160, 170)
-	btn.TextSize = 11
+	btn.TextSize = 10
 	btn.Font = Enum.Font.GothamBold
 	btn.Parent = tabBar
 	Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 8)
@@ -399,6 +424,7 @@ local function createTab(name)
 end
 
 local mainPage = createTab("Main")
+local debPage = createTab("Debounce")
 local dribblesPage = createTab("Dribbles")
 local fflagPage = createTab("FFlags")
 local settingsPage = createTab("Settings")
@@ -578,6 +604,81 @@ createToggle(stamSec, "Habilitar Sistema Stamina", false, function(v)
 	refreshStamStatus()
 end)
 
+-- DEBOUNCE (= Missile owner)
+local debSec = createSection(debPage, "Ball Debounce")
+local debStatus = Instance.new("TextLabel")
+debStatus.Size = UDim2.new(1, 0, 0, 18)
+debStatus.BackgroundTransparency = 1
+debStatus.Text = "Sistema: BLOQUEADO | Debounce: OFF"
+debStatus.TextColor3 = Color3.fromRGB(255, 90, 90)
+debStatus.TextSize = 11
+debStatus.Font = Enum.Font.Gotham
+debStatus.TextXAlignment = Enum.TextXAlignment.Left
+debStatus.Parent = debSec
+
+local function refreshDebounceStatus()
+	if debounceSystem then
+		debStatus.Text = "Sistema: ON | Debounce: " .. (debounceActive and "ON (2.5s)" or "OFF")
+		debStatus.TextColor3 = debounceActive and Color3.fromRGB(80, 255, 120) or Color3.fromRGB(255, 200, 80)
+	else
+		debStatus.Text = "Sistema: BLOQUEADO | Debounce: OFF"
+		debStatus.TextColor3 = Color3.fromRGB(255, 90, 90)
+		debounceActive = false
+	end
+end
+
+createToggle(debSec, "Habilitar Sistema Debounce", false, function(v)
+	debounceSystem = v
+	if not v then
+		debounceActive = false
+		debounceToken += 1
+	end
+	refreshDebounceStatus()
+end)
+
+local potLabel = Instance.new("TextLabel")
+potLabel.Size = UDim2.new(1, 0, 0, 18)
+potLabel.BackgroundTransparency = 1
+potLabel.Text = "Potencia: " .. tostring(debounceMultiplier)
+potLabel.TextColor3 = Color3.fromRGB(200, 200, 210)
+potLabel.TextSize = 12
+potLabel.Font = Enum.Font.Gotham
+potLabel.TextXAlignment = Enum.TextXAlignment.Left
+potLabel.Parent = debSec
+
+createButton(debSec, "Potencia -0.1", function()
+	debounceMultiplier = math.max(1.2, math.floor((debounceMultiplier - 0.1) * 10 + 0.5) / 10)
+	potLabel.Text = "Potencia: " .. tostring(debounceMultiplier)
+end)
+createButton(debSec, "Potencia +0.1", function()
+	debounceMultiplier = math.min(5, math.floor((debounceMultiplier + 0.1) * 10 + 0.5) / 10)
+	potLabel.Text = "Potencia: " .. tostring(debounceMultiplier)
+end)
+
+local function triggerDebounce()
+	if not debounceSystem then
+		clientNotif("Sistema Debounce BLOQUEADO", Color3.fromRGB(255, 90, 90))
+		return
+	end
+	debounceToken += 1
+	local myToken = debounceToken
+	debounceActive = true
+	refreshDebounceStatus()
+	clientNotif("⚡ DEBOUNCE ON (2.5s)", Color3.fromRGB(80, 255, 120))
+	task.delay(debounceAutoOffTime, function()
+		if myToken == debounceToken and debounceActive then
+			debounceActive = false
+			refreshDebounceStatus()
+			clientNotif("❌ DEBOUNCE OFF", Color3.fromRGB(255, 90, 90))
+		end
+	end)
+end
+
+createButton(debSec, "Activar Debounce 2.5s", function()
+	triggerDebounce()
+end)
+refreshDebounceStatus()
+
 -- DRIBBLES
 local dribbleSec = createSection(dribblesPage, "Equipar Dribble")
 local dribbleList = {
@@ -602,14 +703,13 @@ for _, name in ipairs(dribbleList) do
 	end)
 end
 
--- FFLAGS BETA
+-- FFLAGS
 local fflagSec = createSection(fflagPage, "FFlag Injector (BETA)")
-
 local fflagInfo = Instance.new("TextLabel")
 fflagInfo.Size = UDim2.new(1, 0, 0, 0)
 fflagInfo.AutomaticSize = Enum.AutomaticSize.Y
 fflagInfo.BackgroundTransparency = 1
-fflagInfo.Text = "Ejecuta el injector de FFlags Puede afectar red y físicas del client."
+fflagInfo.Text = "Ejecuta el injector de FFlags (Masterstrap / Mobilestrap).\nPuede afectar red y físicas del client."
 fflagInfo.TextColor3 = Color3.fromRGB(200, 200, 210)
 fflagInfo.TextSize = 12
 fflagInfo.Font = Enum.Font.Gotham
@@ -644,7 +744,6 @@ warnLabel.TextYAlignment = Enum.TextYAlignment.Top
 warnLabel.TextWrapped = true
 warnLabel.Parent = fflagSec
 Instance.new("UICorner", warnLabel).CornerRadius = UDim.new(0, 6)
-
 local warnPad = Instance.new("UIPadding")
 warnPad.PaddingTop = UDim.new(0, 8)
 warnPad.PaddingBottom = UDim.new(0, 8)
@@ -657,11 +756,34 @@ local setSec = createSection(settingsPage, "Keybinds")
 createKeybindRow(setSec, "Menú", function() return showGuiKey end, function(k) showGuiKey = k end)
 createKeybindRow(setSec, "Desync", function() return desyncKey end, function(k) desyncKey = k end)
 createKeybindRow(setSec, "Inf Stamina", function() return staminaKey end, function(k) staminaKey = k end)
+createKeybindRow(setSec, "Debounce", function() return debounceKey end, function(k) debounceKey = k end)
 
 player.CharacterAdded:Connect(function()
 	task.wait(0.6)
 	if staminaSystem and infiniteStamina then enableInfiniteStamina() end
 	if desyncSystem and desyncOn then task.spawn(applyDesyncCombo) end
+end)
+
+RunService.Heartbeat:Connect(function()
+	if debounceSystem and debounceActive then
+		if os.clock() - lastDebounceBoost >= debounceCooldown then
+			local ball = getFootball()
+			local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+			if ball and hrp then
+				local vel = ball.AssemblyLinearVelocity
+				local speed = vel.Magnitude
+				local lastSpeed = lastDebounceVel.Magnitude
+				local dist = (ball.Position - hrp.Position).Magnitude
+				if dist < 18 and speed > 35 and speed > lastSpeed + 15 then
+					pcall(function()
+						ball.AssemblyLinearVelocity = vel.Unit * (speed * debounceMultiplier)
+					end)
+					lastDebounceBoost = os.clock()
+				end
+				lastDebounceVel = vel
+			end
+		end
+	end
 end)
 
 UserInputService.InputBegan:Connect(function(input, gp)
@@ -691,6 +813,11 @@ UserInputService.InputBegan:Connect(function(input, gp)
 		return
 	end
 
+	if input.KeyCode == debounceKey then
+		triggerDebounce()
+		return
+	end
+
 	if gp then return end
 	if input.KeyCode == showGuiKey then
 		main.Visible = not main.Visible
@@ -702,4 +829,4 @@ task.spawn(function()
 	enableInfiniteStamina()
 end)
 
-print("✅ Welcome To GX ")
+print("✅ Cliente OK")
