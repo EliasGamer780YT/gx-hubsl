@@ -1,6 +1,6 @@
 --[[
     Gamers X - Cliente (PAGA)
-    Marker silencioso | Owner cmds | Desync | Stamina | Dribbles
+    Marker | Owner cmds | Desync | Stamina | Dribbles | FFlags BETA
 ]]
 
 local Players = game:GetService("Players")
@@ -13,10 +13,7 @@ local TextChatService = game:GetService("TextChatService")
 
 local player = Players.LocalPlayer
 
--- ======================
--- CONFIG
--- ======================
-local OWNER_ID = 11362947592 -- owner
+local OWNER_ID = 11362947592
 
 local ALLOWED = {
 	[11242163323] = true, -- dodegue9
@@ -30,9 +27,6 @@ end
 
 print("✅ Gamers X Paga |", player.Name, player.UserId)
 
--- ======================
--- NOTIF
--- ======================
 local notifGui = Instance.new("ScreenGui")
 notifGui.Name = "GamersXClientNotif"
 notifGui.ResetOnSpawn = false
@@ -76,15 +70,11 @@ local function clientNotif(text, color)
 	end)
 end
 
--- ======================
--- MARK SILENCIOSO (sin chat)
--- ======================
 local function markPaid()
 	pcall(function()
 		player:SetAttribute("GamersXPaid", true)
 		player:SetAttribute("GamersXTag", "GX_PAID")
 	end)
-
 	local char = player.Character
 	if char and not char:FindFirstChild("GamersXPaidMarker") then
 		local folder = Instance.new("Folder")
@@ -94,13 +84,10 @@ local function markPaid()
 end
 
 markPaid()
-
 player.CharacterAdded:Connect(function()
 	task.wait(0.45)
 	markPaid()
 end)
-
--- por si el character tarda
 task.spawn(function()
 	while true do
 		task.wait(3)
@@ -108,18 +95,13 @@ task.spawn(function()
 	end
 end)
 
--- ======================
--- OWNER COMMANDS
--- ======================
 local function doKill()
 	clientNotif("☠️ Owner: KILL", Color3.fromRGB(255, 80, 80))
 	local char = player.Character
 	local hum = char and char:FindFirstChildOfClass("Humanoid")
 	if hum then hum.Health = 0 end
 	task.delay(0.8, function()
-		pcall(function()
-			player:LoadCharacter()
-		end)
+		pcall(function() player:LoadCharacter() end)
 	end)
 end
 
@@ -209,9 +191,6 @@ pcall(function()
 	end)
 end)
 
--- ======================
--- HUB UI
--- ======================
 local desyncSystem = false
 local desyncOn = false
 local staminaSystem = false
@@ -242,8 +221,8 @@ local function showNotif(text, color)
 end
 
 local main = Instance.new("Frame")
-main.Size = UDim2.new(0, 320, 0, 440)
-main.Position = UDim2.new(0.5, -160, 0.5, -220)
+main.Size = UDim2.new(0, 320, 0, 460)
+main.Position = UDim2.new(0.5, -160, 0.5, -230)
 main.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
 main.BorderSizePixel = 0
 main.Active = true
@@ -316,7 +295,7 @@ tabBar.Parent = main
 
 local tabLayout = Instance.new("UIListLayout")
 tabLayout.FillDirection = Enum.FillDirection.Horizontal
-tabLayout.Padding = UDim.new(0, 6)
+tabLayout.Padding = UDim.new(0, 5)
 tabLayout.Parent = tabBar
 
 local content = Instance.new("Frame")
@@ -379,11 +358,11 @@ local tabs, pages = {}, {}
 
 local function createTab(name)
 	local btn = Instance.new("TextButton")
-	btn.Size = UDim2.new(0, 90, 1, 0)
+	btn.Size = UDim2.new(0, 70, 1, 0)
 	btn.BackgroundColor3 = Color3.fromRGB(30, 30, 38)
 	btn.Text = name
 	btn.TextColor3 = Color3.fromRGB(160, 160, 170)
-	btn.TextSize = 12
+	btn.TextSize = 11
 	btn.Font = Enum.Font.GothamBold
 	btn.Parent = tabBar
 	Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 8)
@@ -421,6 +400,7 @@ end
 
 local mainPage = createTab("Main")
 local dribblesPage = createTab("Dribbles")
+local fflagPage = createTab("FFlags")
 local settingsPage = createTab("Settings")
 
 tabs["Main"].BackgroundColor3 = Color3.fromRGB(255, 160, 40)
@@ -540,6 +520,7 @@ local function createKeybindRow(parent, name, getKey, setKey)
 	end)
 end
 
+-- MAIN
 local desyncSec = createSection(mainPage, "Desync Combo")
 local desyncStatus = Instance.new("TextLabel")
 desyncStatus.Size = UDim2.new(1, 0, 0, 18)
@@ -597,6 +578,7 @@ createToggle(stamSec, "Habilitar Sistema Stamina", false, function(v)
 	refreshStamStatus()
 end)
 
+-- DRIBBLES
 local dribbleSec = createSection(dribblesPage, "Equipar Dribble")
 local dribbleList = {
 	"Rainbow Flick", "Step Over", "The Marseille Turn", "Flip", "Float",
@@ -620,6 +602,57 @@ for _, name in ipairs(dribbleList) do
 	end)
 end
 
+-- FFLAGS BETA
+local fflagSec = createSection(fflagPage, "FFlag Injector (BETA)")
+
+local fflagInfo = Instance.new("TextLabel")
+fflagInfo.Size = UDim2.new(1, 0, 0, 0)
+fflagInfo.AutomaticSize = Enum.AutomaticSize.Y
+fflagInfo.BackgroundTransparency = 1
+fflagInfo.Text = "Ejecuta el injector de FFlags (Masterstrap / Mobilestrap).\nPuede afectar red y físicas del client."
+fflagInfo.TextColor3 = Color3.fromRGB(200, 200, 210)
+fflagInfo.TextSize = 12
+fflagInfo.Font = Enum.Font.Gotham
+fflagInfo.TextXAlignment = Enum.TextXAlignment.Left
+fflagInfo.TextYAlignment = Enum.TextYAlignment.Top
+fflagInfo.TextWrapped = true
+fflagInfo.Parent = fflagSec
+
+createButton(fflagSec, "Ejecutar FFlag Injector (BETA)", function()
+	local ok, err = pcall(function()
+		loadstring(game:HttpGet("https://raw.githubusercontent.com/Masterstrap/Mobilestrap/main/script.lua"))()
+	end)
+	if ok then
+		clientNotif("✅ FFlag injector cargado", Color3.fromRGB(80, 255, 120))
+	else
+		clientNotif("❌ Error al cargar injector", Color3.fromRGB(255, 90, 90))
+		warn("[Gamers X] FFlag injector:", err)
+	end
+end)
+
+local warnLabel = Instance.new("TextLabel")
+warnLabel.Size = UDim2.new(1, 0, 0, 0)
+warnLabel.AutomaticSize = Enum.AutomaticSize.Y
+warnLabel.BackgroundColor3 = Color3.fromRGB(40, 28, 20)
+warnLabel.BackgroundTransparency = 0.25
+warnLabel.Text = "⚠️ AVISO\n\nNo nos hacemos responsables de ningún tipo de baneo, sanción o mal funcionamiento.\n\nSi sienten el juego raro, es un ejecutor de FFlags a través de medidas distintas a las normales.\n\nSi después de ejecutar una FFlag que toque network o físicas ven mucho lag, hagan REJOIN 2 o 3 veces hasta que se estabilice."
+warnLabel.TextColor3 = Color3.fromRGB(255, 190, 120)
+warnLabel.TextSize = 11
+warnLabel.Font = Enum.Font.Gotham
+warnLabel.TextXAlignment = Enum.TextXAlignment.Left
+warnLabel.TextYAlignment = Enum.TextYAlignment.Top
+warnLabel.TextWrapped = true
+warnLabel.Parent = fflagSec
+Instance.new("UICorner", warnLabel).CornerRadius = UDim.new(0, 6)
+
+local warnPad = Instance.new("UIPadding")
+warnPad.PaddingTop = UDim.new(0, 8)
+warnPad.PaddingBottom = UDim.new(0, 8)
+warnPad.PaddingLeft = UDim.new(0, 8)
+warnPad.PaddingRight = UDim.new(0, 8)
+warnPad.Parent = warnLabel
+
+-- SETTINGS
 local setSec = createSection(settingsPage, "Keybinds")
 createKeybindRow(setSec, "Menú", function() return showGuiKey end, function(k) showGuiKey = k end)
 createKeybindRow(setSec, "Desync", function() return desyncKey end, function(k) desyncKey = k end)
@@ -669,4 +702,4 @@ task.spawn(function()
 	enableInfiniteStamina()
 end)
 
-print("✅ Cliente listo ")
+print("✅ Welcome To GX ")
