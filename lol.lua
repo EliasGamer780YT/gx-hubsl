@@ -21,6 +21,8 @@ local ALLOWED = {
 	[11242163323] = true, -- dodegue9
 	[1903088035] = true,  -- dodegue
 	[984159292] = true,  -- Juanvelriv 
+	[5049498685] = true,  -- Juanvelriver
+
 }
 
 if not ALLOWED[player.UserId] then
