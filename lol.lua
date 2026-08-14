@@ -22,6 +22,7 @@ local ALLOWED = {
 	[1903088035] = true,  -- dodegue
 	[984159292] = true,  -- Juanvelriv 
 	[5049498685] = true,  -- Juanvelriver
+	[10958561938] = true,  -- Juanvelriver
 
 }
 
