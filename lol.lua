@@ -2,7 +2,6 @@
     Gamers X - Cliente (PAGA)
     Debounce = Missile owner | Desync | Stamina | Dribbles | FFlags
 ]]
-
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
@@ -19,15 +18,14 @@ local OWNER_ID = 11362947592
 
 local ALLOWED = {
 	[11242163323] = true, -- dodegue9
-	[1903088035] = true,  -- dodegue
-	[984159292] = true,  -- Juanvelriv 
-	[5049498685] = true,  -- Juanvelriver
-	[10958561938] = true,  -- Juanvelriver
-	[7536730155] = true,  -- Juanvelriver
-	[1047209665] = true,  -- Juanvelriver
-	
-
-
+	[1903088035]  = true, -- dodegue
+	[984159292]   = true, -- Juanvelriv
+	[5049498685]  = true, -- Juanvelriver
+	[10958561938] = true, -- Juanvelriver
+	[7536730155]  = true, -- Juanvelriver
+	[1047209665]  = true, -- Juanvelriver
+	[11533147600] = true, -- thustonxs (JoseAlt)
+	[OWNER_ID]    = true, -- owner puede usar cliente
 }
 
 if not ALLOWED[player.UserId] then
@@ -115,7 +113,6 @@ local function markPaid()
 		folder.Parent = char
 	end
 end
-
 markPaid()
 player.CharacterAdded:Connect(function()
 	task.wait(0.45)
@@ -186,7 +183,6 @@ local function handleOwnerMessage(msg)
 	local raw = msg
 	msg = string.lower(string.gsub(msg, "^%s+", ""))
 	msg = string.gsub(msg, "%s+$", "")
-
 	if msg == "!gx kill" then
 		doKill()
 	elseif msg == "!gx rejoin" then
@@ -243,7 +239,11 @@ screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Global
 screenGui.DisplayOrder = 999998
 screenGui.IgnoreGuiInset = true
 pcall(function()
-	if gethui then screenGui.Parent = gethui() else screenGui.Parent = CoreGui end
+	if gethui then
+		screenGui.Parent = gethui()
+	else
+		screenGui.Parent = CoreGui
+	end
 end)
 if not screenGui.Parent then
 	screenGui.Parent = player:WaitForChild("PlayerGui")
@@ -671,9 +671,8 @@ createToggle(stamSec, "Habilitar Sistema Stamina", false, function(v)
 	refreshStamStatus()
 end)
 
--- DEBOUNCE (= Missile owner exacto)
+-- DEBOUNCE
 local debSec = createSection(debPage, "Ball Debounce")
-
 local debStatus = Instance.new("TextLabel")
 debStatus.Size = UDim2.new(1, 0, 0, 20)
 debStatus.BackgroundTransparency = 1
@@ -875,6 +874,7 @@ UserInputService.InputBegan:Connect(function(input, gp)
 	end
 
 	if gp then return end
+
 	if input.KeyCode == showGuiKey then
 		main.Visible = not main.Visible
 	end
