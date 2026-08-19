@@ -25,6 +25,8 @@ local ALLOWED = {
 	[7536730155]  = true, -- Juanvelriver
 	[1047209665]  = true, -- Juanvelriver
 	[11533147600] = true, -- thustonxs (JoseAlt)
+	[11362947592] = true, --test 
+
 	[OWNER_ID]    = true, -- owner puede usar cliente
 }
 
