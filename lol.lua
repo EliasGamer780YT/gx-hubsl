@@ -19,6 +19,7 @@ local OWNER_ID = 11362947592
 local ALLOWED = {
 	[11242163323] = true, -- dodegue9
 	[1903088035]  = true, -- dodegue
+	[8565454]  = true, -- dodegue
 	[984159292]   = true, -- Juanvelriv
 	[5049498685]  = true, -- Juanvelriver
 	[10958561938] = true, -- Juanvelriver
